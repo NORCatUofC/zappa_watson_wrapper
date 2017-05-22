@@ -8,7 +8,7 @@
         "timeout_seconds": 300,
         "events": [
           {
-            "function": "utils.handle_audio",
+            "function": "utils.handle_upload",
             "event_source": {
               "arn": "arn:aws:s3:::watson-zappa-test",
               "events": [

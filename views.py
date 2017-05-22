@@ -69,7 +69,7 @@ def index():
         prefixes = [obj['Prefix'] for obj in objects['CommonPrefixes']]
     else:
         objects = s3_client.list_objects(Bucket=S3_BUCKET, Prefix=prefix)
-        keys = [obj['Key'] for obj in objects['Contents']]
+        keys = [obj['Key'] for obj in objects['Contents'] if not obj['Key'].endswith('/')]
 
     return render_template('index.html', prefixes=prefixes, keys=keys)
 

@@ -2,6 +2,8 @@ import os
 import json
 import boto3
 import requests
+from bisect import bisect
+from datetime import date
 from urllib.parse import urlparse, urljoin
 from requests.auth import HTTPBasicAuth
 from flask import request
@@ -52,13 +54,7 @@ class LoginForm(Form):
         return self.username.data == os.getenv('HTTP_USER') and self.password.data == os.getenv('HTTP_PASS')
 
 
-def handle_audio(event, context):
-    record = event['Records'][0]
-    bucket = record['s3']['bucket']['name']
-    key = record['s3']['object']['key']
-    if not key.endswith('.wav'):
-        return
-
+def handle_audio(key):
     audio_obj = s3_client.get_object(Bucket=S3_BUCKET, Key=key)
     # NOTE: Slicing key because assuming will be in "uploads/" and slashes can't be in Flask path
     callback_url = ZAPPA_HOST + '/callback/{}/results'.format(key.split('/')[-1])
@@ -79,17 +75,48 @@ def handle_audio(event, context):
         print('Job created')
         print(res.content)
     else:
-        print('Job creation failed with status code {}'.format(res.status_code))\
+        print('Job creation failed with status code {}'.format(res.status_code))
 
 
-def process_transcription(event, context):
+def process_transcription(key):
+    transcript_obj = s3_client.get_object(Bucket=S3_BUCKET, Key=key)
+    transcript = json.loads(transcript_obj['Body'].read())
+    speaker_list = transcript['results'][0]['speaker_labels']
+    result_list = transcript['results'][0]['results']
+
+    # Parsing speakers and created .txt file
+    speaker_start_times = [s['from'] for s in speaker_list]
+    speaker_ids = [s['speaker'] for s in speaker_list]
+
+    # Using array bisection on start times for speakers and earliest transcript time to match speakers and text
+    results_w_speaker = []
+    for r in result_list:
+        result = r['alternatives'][0]
+        speaker_idx = bisect(speaker_start_times, result['timestamps'][0][1])
+        results_w_speaker.append(
+            (speaker_ids[speaker_idx],
+             result['transcript'].replace('%HESITATION', ''),
+             result['timestamps'][0][1],
+             result['timestamps'][-1][2])
+        )
+
+    result_csv_list = ['{},{},{},{}'.format(*r) for r in results_w_speaker]
+    csv_list = ['speaker,transcript,start_time,end_time']
+    clean_result_csv = '\n'.join(csv_list + result_csv_list)
+
+    transcript_key = key.split('/')[-1].replace('.json', '')
+    s3_client.put_object(
+        Bucket=S3_BUCKET,
+        Key='{}/clean/{}.csv'.format(date.today().strftime('%Y%m%d'), transcript_key),
+        Body=clean_result_csv
+    )
+
+
+def handle_upload(event, context):
     record = event['Records'][0]
-    bucket = record['s3']['bucket']['name']
     key = record['s3']['object']['key']
 
-    # TODO: Don't see option for filter params in Zappa config, manually doing for now
-    if not key.endswith('.json'):
-        return
-
-    transcript_obj = s3.Object(S3_BUCKET, key)
-    transcription_dict = json.loads(transcript_obj.get()['Body'].read())
+    if key.endswith('.wav'):
+        handle_audio(key)
+    elif key.endswith('.json') and '/results/' in key:
+        process_transcription(key)
