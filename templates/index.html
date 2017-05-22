@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Watson Transcription</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta charset='utf-8' />
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+      {% block content %}
+      {% for prefix in prefixes %}
+      <p><a href="{{ url_for('views.index') }}?prefix={{prefix}}">{{prefix}}</a></p>
+      {% endfor %}
+
+      {% for key in keys %}
+      <p><a href="{{ url_for('views.download') }}?key={{key}}" download>{{key}}</a></p>
+      {% endfor %}
+
+      {% endblock %}
+    </div>
+  </body>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</html>

@@ -1,0 +1,9 @@
+{% extends "index.html" %}
+{% block content %}
+<p><input type="file" /></p>
+<p><button id="upload">Upload</button></p>
+<script>
+var csrftoken = "{{ csrf_token() }}";
+var ZAPPA_HOST = "{{ url_for('views.direct_upload') }}";
+</script>
+{% endblock %}

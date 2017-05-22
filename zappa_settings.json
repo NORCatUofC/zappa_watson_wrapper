@@ -1,0 +1,21 @@
+{
+    "dev": {
+        "s3_bucket": "zappa-watson-dev",
+        "app_function": "app.app",
+        "runtime": "python3.6",
+        "keep_warm": false,
+        "remote_env": "s3://watson-zappa-test-config/dev.json",
+        "timeout_seconds": 300,
+        "events": [
+          {
+            "function": "utils.handle_audio",
+            "event_source": {
+              "arn": "arn:aws:s3:::watson-zappa-test",
+              "events": [
+                "s3:ObjectCreated:*"
+              ]
+            }
+          }
+        ]
+    }
+}
