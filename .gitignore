@@ -5,3 +5,4 @@ __pycache__
 !/zappa_settings.json
 venv
 .idea
+lib/ffmpeg

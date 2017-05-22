@@ -6,6 +6,7 @@
         "keep_warm": false,
         "remote_env": "s3://watson-zappa-test-config/dev.json",
         "timeout_seconds": 300,
+        "memory_size": 1024,
         "events": [
           {
             "function": "utils.handle_upload",

@@ -1,6 +1,8 @@
 import os
 import json
+from subprocess import Popen, PIPE
 import boto3
+from botocore.client import Config
 import requests
 from bisect import bisect
 from datetime import date
@@ -28,7 +30,8 @@ s3_client = boto3.client(
     's3',
     region_name=os.getenv('AWS_REGION'),
     aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+    config=Config(connect_timeout=300, read_timeout=300)
 )
 
 
@@ -64,11 +67,17 @@ def handle_audio(key):
     if resp.status_code not in [200, 201]:
         print('Failure registering callback')
 
+    # Converting audio with ffmpeg
+    os.environ['PATH'] += ':' + os.path.join(os.getcwd(), 'lib')
+    process = Popen('ffmpeg -i pipe:0 -f flac pipe:1'.split(), stdout=PIPE, stdin=PIPE)
+    stdout, stderr = process.communicate(input=audio_obj['Body'].read())
+
     res = requests.post(
         # NOTE: events parameter is important, makes sure results are sent in callback
         url=WATSON_URL + 'recognitions?callback_url={}&{}'.format(callback_url, '&'.join(WATSON_PARAMS)),
-        data=audio_obj['Body'].read(),
-        headers={'Content-Type': 'audio/wav'},
+        data=stdout,
+        headers={'Content-Type': 'audio/flac'},
+        timeout=300,
         auth=HTTPBasicAuth(WATSON_USER, WATSON_PASS)
     )
     if res.status_code == 201:
@@ -115,8 +124,9 @@ def process_transcription(key):
 def handle_upload(event, context):
     record = event['Records'][0]
     key = record['s3']['object']['key']
+    key_low = key.lower()
 
-    if key.endswith('.wav'):
+    if key_low.endswith('.wav') or key_low.endswith('.mp3'):
         handle_audio(key)
-    elif key.endswith('.json') and '/results/' in key:
+    elif key_low.endswith('.json') and '/results/' in key:
         process_transcription(key)
