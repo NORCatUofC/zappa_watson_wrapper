@@ -112,6 +112,7 @@ def download():
     return redirect(download_url)
 
 
+# TODO: Make this require auth? Or make configurable, could be useful for users who can't access later to upload
 @views.route('/s3-post', methods=['GET', 'POST'])
 def direct_upload():
     # Load required data from the request
