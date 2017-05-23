@@ -69,14 +69,13 @@ def handle_audio(key):
 
     # Converting audio with ffmpeg
     os.environ['PATH'] += ':' + os.path.join(os.getcwd(), 'lib')
-    process = Popen('ffmpeg -i pipe:0 -f flac pipe:1'.split(), stdout=PIPE, stdin=PIPE)
+    process = Popen('ffmpeg -i pipe:0 -f ogg pipe:1'.split(), stdout=PIPE, stdin=PIPE)
     stdout, stderr = process.communicate(input=audio_obj['Body'].read())
 
     res = requests.post(
-        # NOTE: events parameter is important, makes sure results are sent in callback
         url=WATSON_URL + 'recognitions?callback_url={}&{}'.format(callback_url, '&'.join(WATSON_PARAMS)),
         data=stdout,
-        headers={'Content-Type': 'audio/flac'},
+        headers={'Content-Type': 'audio/ogg'},
         timeout=300,
         auth=HTTPBasicAuth(WATSON_USER, WATSON_PASS)
     )
