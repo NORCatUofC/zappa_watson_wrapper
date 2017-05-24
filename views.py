@@ -46,7 +46,7 @@ def login():
         next = flask.request.args.get('next', '')
         if not is_safe_url(next):
             return flask.abort(400)
-        return redirect(next or flask.url_for('index'))
+        return redirect(next or flask.url_for('views.index'))
     return render_template('login.html', form=form)
 
 
@@ -59,19 +59,25 @@ def logout():
 @views.route('/')
 @auth_required
 def index():
-    bucket = s3.Bucket(S3_BUCKET)
     prefix = request.args.get('prefix', '')
-    prefixes, keys = [], []
+    render_dict = {}
 
     # At top level, only list dates
     if not len(prefix):
         objects = s3_client.list_objects(Bucket=S3_BUCKET, Prefix=prefix, Delimiter='/')
-        prefixes = [obj['Prefix'] for obj in objects['CommonPrefixes']]
+        render_dict['prefixes'] = [obj['Prefix'] for obj in objects['CommonPrefixes']]
     else:
         objects = s3_client.list_objects(Bucket=S3_BUCKET, Prefix=prefix)
         keys = [obj['Key'] for obj in objects['Contents'] if not obj['Key'].endswith('/')]
+        key_dicts = [{'recording': k} for k in filter(lambda x: '/recordings/' in x, keys)]
+        for kd in key_dicts:
+            csv_key = kd['recording'].replace('/recordings/', '/clean/') + '.csv'
+            kd['transcript'] = csv_key.split('/')[-1] if csv_key in keys else 'Processing'
+            kd['recording'] = kd['recording'].split('/')[-1]
+        render_dict['prefix_date'] = keys[0].split('/')[0]
+        render_dict['keys'] = key_dicts
 
-    return render_template('index.html', prefixes=prefixes, keys=keys)
+    return render_template('index.html', **render_dict)
 
 
 @views.route('/callback/<string:audio_key>/results', methods=['GET', 'POST'])
@@ -112,8 +118,8 @@ def download():
     return redirect(download_url)
 
 
-# TODO: Make this require auth? Or make configurable, could be useful for users who can't access later to upload
-@views.route('/s3-post', methods=['GET', 'POST'])
+@views.route('/upload', methods=['GET', 'POST'])
+@auth_required
 def direct_upload():
     # Load required data from the request
     if request.method == 'GET':

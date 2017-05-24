@@ -1,9 +1,23 @@
 {% extends "index.html" %}
+{% block topnav %}
+{% endblock %}
+
 {% block content %}
-<form action="{{ url_for('views.login') }}?next={{request.args.get('next', '')}}" method=post>
-  {{form.hidden_tag()}}
-  {{form.username}}
-  {{form.password}}
-  {{form.submit}}
-</form>
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <h1>Login</h1>
+        <form role="form" action="{{ url_for('views.login') }}?next={{request.args.get('next', '')}}" method="post">
+            {{form.hidden_tag()}}
+            <div class="form-group">
+                <label for="username">Username: </label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+            </div>
+            <button id="submit" name="submit" type="submit" class="btn btn-primary">Login</button>
+        </form>
+     </div>
+</div>
 {% endblock %}

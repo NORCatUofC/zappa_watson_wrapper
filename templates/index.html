@@ -1,21 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>Watson Transcription</title>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
     <meta charset='utf-8' />
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
   </head>
   <body>
     <div class="container">
+      {% block topnav %}
+      <nav class="navbar navbar-default navbar-fixed-top">
+        <div class="container">
+          <ul class="nav navbar-nav">
+            <li><a href="{{ url_for('views.index') }}">Home</a></li>
+            <li><a href="{{ url_for('views.direct_upload') }}">Upload</a></li>
+          </ul>
+          <span class="navbar-text" style="float:right;"><a href="{{ url_for('views.logout') }}">Logout</a></span>
+        </div>
+      </nav>
+      {% endblock %}
       {% block content %}
-      {% for prefix in prefixes %}
-      <p><a href="{{ url_for('views.index') }}?prefix={{prefix}}">{{prefix}}</a></p>
-      {% endfor %}
+      <div class="row main">
+        <div class="col-md-10">
+            <h1>Recordings</h1>
+            {% if prefix_date %}
+            <h3>{{ prefix_date }}</h3>
+            {% endif %}
+            {% if prefixes %}
+            <ul class="list-group">
+                {% for prefix in prefixes %}
+                <li class="list-group-item"><a href="{{ url_for('views.index') }}?prefix={{prefix}}">{{prefix}}</a></li>
+                {% endfor %}
+            </ul>
+            {% endif  %}
 
-      {% for key in keys %}
-      <p><a href="{{ url_for('views.download') }}?key={{key}}" download>{{key}}</a></p>
-      {% endfor %}
+            {% if keys %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Recording</th>
+                        <th>Transcript</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key in keys %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('views.download') }}?key={{ prefix_date }}/recordings/{{ key.recording }}">
+                                {{ key.recording }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if key.transcript != 'Processing' %}
+                            <a href="{{ url_for('views.download') }}?key={{ prefix_date }}/clean/{{ key.transcript }}">
+                                {{ key.transcript }}
+                            </a>
+                            {% else %}
+                            {{ key.transcript }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+      </div>
+
 
       {% endblock %}
     </div>
