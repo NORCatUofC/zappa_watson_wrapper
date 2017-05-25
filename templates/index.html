@@ -47,17 +47,17 @@
                     {% for key in keys %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('views.download') }}?key={{ prefix_date }}/recordings/{{ key.recording }}">
-                                {{ key.recording }}
-                            </a>
+                            <a href="{{ key.audio_url }}" download>{{ key.recording }}</a>
+                            <audio controls preload="none">
+                                <source src="{{ key.audio_url }}" type="{{ key.filetype }}">
+                                Your browser does not support the audio tag.
+                            </audio>
                         </td>
                         <td>
-                            {% if key.transcript != 'Processing' %}
-                            <a href="{{ url_for('views.download') }}?key={{ prefix_date }}/clean/{{ key.transcript }}">
-                                {{ key.transcript }}
-                            </a>
+                            {% if key.transcript_url %}
+                            <a href="{{ key.transcript_url }}">{{ key.transcript }}</a>
                             {% else %}
-                            {{ key.transcript }}
+                            Processing...
                             {% endif %}
                         </td>
                     </tr>

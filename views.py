@@ -1,5 +1,4 @@
 import os
-import io
 from functools import wraps
 from datetime import date
 import boto3
@@ -72,9 +71,25 @@ def index():
         keys = [obj['Key'] for obj in objects['Contents'] if not obj['Key'].endswith('/')]
         key_dicts = [{'recording': k} for k in filter(lambda x: '/recordings/' in x, keys)]
         for kd in key_dicts:
+            kd['audio_url'] = s3_client.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': S3_BUCKET, 'Key': kd['recording']}
+            )
             csv_key = kd['recording'].replace('/recordings/', '/clean/') + '.csv'
-            kd['transcript'] = csv_key.split('/')[-1] if csv_key in keys else 'Processing'
+            if csv_key in keys:
+                kd['transcript'] = csv_key.split('/')[-1]
+                kd['transcript_url'] = s3_client.generate_presigned_url(
+                    ClientMethod='get_object',
+                    Params={'Bucket': S3_BUCKET, 'Key': csv_key}
+                )
+
             kd['recording'] = kd['recording'].split('/')[-1]
+            file_ext = kd['recording'].split('.')[-1]
+            if file_ext == 'wav':
+                kd['filetype'] = 'audio/x-wav'
+            else:
+                kd['filetype'] = 'audio/' + file_ext
+
         render_dict['prefix_date'] = keys[0].split('/')[0]
         render_dict['keys'] = key_dicts
 
@@ -101,22 +116,6 @@ def callback_route(audio_key):
             Body=json.dumps(post_vals)
         )
         return jsonify({'message': 'Success'})
-
-
-@views.route('/download')
-@auth_required
-def download():
-    key_val = request.args.get('key')
-    if not key_val:
-        resp = jsonify({'status': 404, 'message': 'Not found'})
-        resp.status_code = 404
-        return resp
-
-    download_url = s3_client.generate_presigned_url(
-        ClientMethod='get_object',
-        Params={'Bucket': S3_BUCKET, 'Key': key_val}
-    )
-    return redirect(download_url)
 
 
 @views.route('/upload', methods=['GET', 'POST'])
