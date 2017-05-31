@@ -64,7 +64,8 @@ function S3DirectPost(uploadFile, presignUrl, keyCallback) {
 
     var today = new Date();
     var dateStr = today.getFullYear().toString() + zeroPad(today.getMonth()+1) + zeroPad(today.getDate());
-    var s3Key = dateStr + "/recordings/" + uploadFile.files[0].name;
+    var filename = uploadFile.files[0].name.replace(/\s+/g, "_");
+    var s3Key = dateStr + "/recordings/" + filename;
 
     form.append('file-name', s3Key);
     form.append('file-type', uploadFile.files[0].type);
