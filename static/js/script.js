@@ -40,6 +40,9 @@ if (!Object.keys) {
   }());
 }
 
+// Declaring vars for access
+var s3Post, audioEl;
+
 function zeroPad(num) {
   if (num.toString().length == 1) {
     return "0" + num.toString();
@@ -122,9 +125,6 @@ function S3DirectPost(uploadFile, presignUrl, keyCallback) {
   };
 }
 
-// Declaring s3Post for access
-var s3Post;
-
 function triggerUpload() {
   var uploadInput = document.querySelector("input[type='file']");
   if (uploadInput.files[0]) {
@@ -132,6 +132,24 @@ function triggerUpload() {
     s3Post.submitToS3();
   }
 }
+
+function playSnippet(ev) {
+  var el = ev.target;
+
+  // Remove active class from other rows, add to current
+  document.querySelectorAll(".row.active").forEach(function(el) {
+    el.className = el.className.slice(0, el.className.length-7);
+  });
+   var row = el.parentNode.parentNode;
+  row.className += " active";
+
+  audioEl.currentTime = +el.dataset.start;
+  audioEl.play();
+  setTimeout(function() {
+    audioEl.pause();
+  }, (el.dataset.end - el.dataset.start) * 1000);
+}
+
 
 (function() {
   var uploadButton = document.getElementById("upload");
@@ -164,6 +182,46 @@ function triggerUpload() {
       if (s3Post.progressPct === -1) {
         failureEl.style.display = "inherit";
       }
+    });
+  }
+
+  var submitTranscript = document.getElementById("submitTranscript");
+  var playButtons = document.querySelectorAll("button.transcript");
+  audioEl = document.getElementsByTagName("audio")[0];
+
+  if (playButtons.length) {
+    playButtons.forEach(function(el) {
+      el.addEventListener("click", playSnippet);
+    });
+  }
+  if (submitTranscript) {
+    submitTranscript.addEventListener("click", function() {
+      // Get values from text elements, submit POST request with JSON
+      var textEls = document.querySelectorAll("textarea");
+      var results = [];
+      textEls.forEach(function(el) {
+        results.push(el.value);
+      });
+
+      failureEl.style.display = "none";
+      successEl.style.display = "none";
+      progressEl.style.display = "inherit";
+
+      var req = new XMLHttpRequest();
+      req.open("POST", ZAPPA_HOST, true);
+      req.setRequestHeader("Content-Type", "application/json");
+      req.setRequestHeader("X-CSRFToken", csrftoken);
+
+      req.onerror = function(e) {
+        progressEl.style.display = "none";
+        failureEl.style.display = "inherit";
+      };
+      req.onload = function() {
+        progressEl.style.display = "none";
+        successEl.style.display = "inherit";
+      };
+
+      req.send(JSON.stringify({transcript_key: transcript_key, results: results}));
     });
   }
 })()

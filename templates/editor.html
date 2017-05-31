@@ -1,0 +1,45 @@
+{% extends "index.html" %}
+{% block content %}
+<div class="row main">
+    <div class="col-sm-10 col-sm-offset-1">
+        <h1>Edit Transcript</h1>
+        <div>
+            <audio controls preload="auto">
+                <source src="{{ audio_url }}" type="{{ filetype }}">
+                Your browser does not support the audio tag.
+            </audio>
+        </div>
+        {% for r in results %}
+        <div class="row transcript">
+            <div class="col-sm-10">
+                <textarea class="transcript-item" data-start="{{ r.start }}" data-end="{{ r.end }}">{{ r.transcript }}</textarea>
+            </div>
+            <div class="col-sm-2">
+                <button class="btn btn-primary transcript" data-start="{{ r.start }}" data-end="{{ r.end }}">Play</button>
+            </div>
+        </div>
+        {%  endfor %}
+        <div class="row transcript">
+            <div class="col-sm-2">
+                <button id="submitTranscript" name="submitTranscript" class="btn btn-primary">Submit</button>
+            </div>
+            <div class="col-sm-10">
+                <div id="progress" style="display:none">
+                    Updating...
+                </div>
+                <div id="success" class="alert alert-success" style="display:none;">
+                    <strong>Transcript updated.</strong>
+                </div>
+                <div id="failure" class="alert alert-danger" style="display:none;">
+                    <strong>Transcript update failed.</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+var transcript_key = "{{ transcript_key }}";
+var csrftoken = "{{ csrf_token() }}";
+var ZAPPA_HOST = "{{ url_for('views.edit_transcription') }}";
+</script>
+{% endblock %}

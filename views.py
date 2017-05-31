@@ -89,7 +89,6 @@ def index():
                 kd['filetype'] = 'audio/x-wav'
             else:
                 kd['filetype'] = 'audio/' + file_ext
-
         render_dict['prefix_date'] = keys[0].split('/')[0]
         render_dict['keys'] = key_dicts
 
@@ -139,3 +138,63 @@ def direct_upload():
         )
 
         return jsonify(presigned_post)
+
+
+@views.route('/edit', methods=['GET', 'POST'])
+@auth_required
+def edit_transcription():
+    if request.method == 'GET':
+        prefix = request.args.get('prefix')
+        recording = request.args.get('recording')
+        if not prefix and recording:
+            return redirect(flask.url_for('views.index'))
+
+        transcript_file = recording + '.json'
+        transcript_key = '{}/results/{}'.format(prefix, transcript_file)
+        transcript_obj = s3_client.get_object(Bucket=S3_BUCKET, Key=transcript_key)
+        transcript = json.loads(transcript_obj['Body'].read())
+
+        results = transcript['results'][0]['results']
+        result_list = []
+        for result in results:
+            r = result['alternatives'][0]
+            result_list.append({
+                'transcript': r['transcript'].replace('%HESITATION', ''),
+                'start': r['timestamps'][0][1],
+                'end': r['timestamps'][-1][2]
+            })
+
+        # Generating presigned url for audio playback
+        audio_url = s3_client.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': S3_BUCKET, 'Key': '{}/recordings/{}'.format(prefix, recording)}
+        )
+        return render_template('editor.html',
+                               # prefix=prefix,
+                               transcript_key=transcript_key,
+                               audio_url=audio_url,
+                               filetype='audio/' + recording.split('.')[-1],
+                               results=result_list)
+
+    elif request.method == 'POST':
+        result_json = request.get_json()
+        if not len(result_json['results']):
+            return redirect(flask.url_for('views.index'))
+
+        transcript_obj = s3_client.get_object(Bucket=S3_BUCKET, Key=result_json['transcript_key'])
+        transcript = json.loads(transcript_obj['Body'].read())
+
+        results = transcript['results'][0]['results']
+        if len(results) != len(result_json['results']):
+            return redirect(flask.url_for('views.index'))
+
+        for idx, r in enumerate(results):
+            r['alternatives'][0]['transcript'] = result_json['results'][idx]
+
+        s3_client.put_object(
+            Bucket=S3_BUCKET,
+            Key=result_json['transcript_key'],
+            Body=json.dumps(transcript)
+        )
+
+        return jsonify({'message': 'success'})
