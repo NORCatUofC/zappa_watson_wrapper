@@ -113,10 +113,11 @@ def process_transcription(key):
     csv_list = ['speaker,transcript,start_time,end_time']
     clean_result_csv = '\n'.join(csv_list + result_csv_list)
 
-    transcript_key = key.split('/')[-1].replace('.json', '')
+    transcript_split = key.split('/')
+    transcript_key = transcript_split[-1].replace('.json', '')
     s3_client.put_object(
         Bucket=S3_BUCKET,
-        Key='{}/clean/{}.csv'.format(date.today().strftime('%Y%m%d'), transcript_key),
+        Key='{}/clean/{}.csv'.format(transcript_split[0], transcript_key),
         Body=clean_result_csv
     )
 

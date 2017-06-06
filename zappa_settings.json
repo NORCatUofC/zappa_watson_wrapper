@@ -1,17 +1,17 @@
 {
     "dev": {
-        "s3_bucket": "zappa-watson-dev",
+        "s3_bucket": "watson-zappa-dev",
         "app_function": "app.app",
         "runtime": "python3.6",
         "keep_warm": false,
-        "remote_env": "s3://watson-zappa-test-config/dev.json",
+        "remote_env": "s3://watson-zappa-dev-config/dev.json",
         "timeout_seconds": 300,
         "memory_size": 1024,
         "events": [
           {
             "function": "utils.handle_upload",
             "event_source": {
-              "arn": "arn:aws:s3:::watson-zappa-test",
+              "arn": "arn:aws:s3:::watson-zappa-dev",
               "events": [
                 "s3:ObjectCreated:*"
               ]
