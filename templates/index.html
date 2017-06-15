@@ -41,6 +41,7 @@
                     <tr>
                         <th>Recording</th>
                         <th>Transcript</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,6 +59,14 @@
                             <a href="{{ key.transcript_url }}">{{ key.transcript }}</a>
                             {% else %}
                             Processing...
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if key.transcript_url %}
+                            <a class="btn btn-primary"
+                               href="{{ url_for('views.edit_transcription') }}?prefix={{ prefix_date }}&recording={{ key.recording }}">
+                                Edit
+                            </a>
                             {% endif %}
                         </td>
                     </tr>
