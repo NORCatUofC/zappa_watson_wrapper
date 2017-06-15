@@ -65,7 +65,8 @@ def index():
     # At top level, only list dates
     if not len(prefix):
         objects = s3_client.list_objects(Bucket=S3_BUCKET, Prefix=prefix, Delimiter='/')
-        render_dict['prefixes'] = [obj['Prefix'] for obj in objects['CommonPrefixes']]
+        if objects.get('CommonPrefixes'):
+            render_dict['prefixes'] = [obj['Prefix'] for obj in objects['CommonPrefixes']]
     else:
         objects = s3_client.list_objects(Bucket=S3_BUCKET, Prefix=prefix)
         keys = [obj['Key'] for obj in objects['Contents'] if not obj['Key'].endswith('/')]
